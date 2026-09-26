@@ -164,7 +164,7 @@
     </div>
 
     <div class="card">
-      <strong style="font-size:1rem">Mailing totals</strong>
+      <strong style="font-size:1rem">Job totals</strong>
       <div id="totalsBox" class="result big"></div>
     </div>
   </div>
@@ -227,7 +227,7 @@ function labelFor(shape){ return 'First-Class · '+(shape==='letters'?'Letters':
 
 function renderHome(){
   const list = document.getElementById('jobList');
-  if(!jobs.length){ list.innerHTML='<div class="empty">No jobs yet. Tap + to add your first mailing.</div>'; return; }
+  if(!jobs.length){ list.innerHTML='<div class="empty">No jobs yet. Tap + to add your first job.</div>'; return; }
   list.innerHTML = jobs.map(j=>`
     <div class="card job" onclick="openJob('${j.id}')">
       <div><div class="name">${escapeHtml(j.name)}</div>
