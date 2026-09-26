@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Postage Calculator</title>
+<style>
+  :root{
+    --bg:#f2f7fc; --card:#ffffff; --ink:#243447; --muted:#6f8194;
+    --accent:#1769aa; --accent2:#4f8fba; --line:#cbdceb;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#162536; --card:#1f3348; --ink:#edf5fc; --muted:#a9bfd2;
+      --accent:#4d9bd3; --accent2:#6faed3; --line:#38516a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#162536; --card:#1f3348; --ink:#edf5fc; --muted:#a9bfd2;
+    --accent:#4d9bd3; --accent2:#6faed3; --line:#38516a;
+  }
+  *{box-sizing:border-box}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,'Times New Roman',serif;
+       min-height:100%;padding:18px;}
+  h1{font-size:1.5rem;margin:4px 0 3px;font-weight:600}
+  .sub{color:var(--muted);font-size:.9rem;margin-bottom:18px;font-family:system-ui,sans-serif}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .job{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+  .job .name{font-size:1.1rem}
+  .badge{font-family:system-ui,sans-serif;font-size:.74rem;color:var(--muted);margin-top:3px}
+  .draft{color:var(--accent);font-weight:600}
+  .fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));
+       width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;
+       border:none;font-size:1.7rem;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer}
+  button{font-family:system-ui,sans-serif}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 15px;
+       font-size:.9rem;cursor:pointer}
+  .btn.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  .btn.small{padding:5px 9px;font-size:.8rem;border-radius:6px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .chartEnter{width:100%;display:block;padding:13px 16px;font-size:1.05rem;border-radius:9px}
+  label{display:block;font-family:system-ui,sans-serif;font-size:.82rem;color:var(--muted);
+        margin:11px 0 5px}
+  input[type=text],input[type=number]{width:100%;padding:9px;border:1px solid var(--line);
+        border-radius:8px;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;font-size:1rem}
+  .toggle{display:flex;gap:8px}
+  .toggle button{flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);
+        background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;font-size:.9rem;cursor:pointer}
+  .toggle button.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;
+        justify-content:center;z-index:50}
+  .overlay.show{display:flex}
+  .overlay.center{align-items:center}
+  .sheet{background:var(--bg);width:100%;max-width:480px;border-radius:16px 16px 0 0;
+        padding:20px;max-height:92vh;overflow-y:auto;padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+  .sheet.centered{border-radius:16px;max-width:340px}
+  table{width:100%;border-collapse:collapse;margin-top:9px;font-family:system-ui,sans-serif}
+  th{text-align:left;font-size:.76rem;color:var(--muted);padding:5px 4px;border-bottom:1px solid var(--line)}
+  td{padding:5px 4px;border-bottom:1px solid var(--line)}
+  td input{width:100%;padding:6px;font-size:.9rem;border:1px solid var(--line);border-radius:6px;
+        background:var(--card);color:var(--ink)}
+  .rowbtn{background:none;border:none;color:var(--muted);font-size:1.05rem;cursor:pointer}
+  .pageStepper{display:flex;align-items:center;justify-content:center;gap:0;width:100%}
+  .pageStepper button{width:30px;height:32px;padding:0;border:1px solid var(--line);
+        background:var(--bg);color:var(--accent);font-family:system-ui,sans-serif;
+        font-size:1.15rem;line-height:1;cursor:pointer}
+  .pageStepper button:first-child{border-radius:6px 0 0 6px}
+  .pageStepper button:last-child{border-radius:0 6px 6px 0}
+  .pageStepper .pageValue{min-width:42px;height:32px;display:flex;align-items:center;
+        justify-content:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+        background:var(--card);font-family:system-ui,sans-serif;font-size:.9rem;font-weight:600}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .back{background:none;border:none;color:var(--accent);font-size:1rem;cursor:pointer;
+        font-family:system-ui,sans-serif;padding:5px 0}
+  .link{background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;
+        font-family:system-ui,sans-serif;text-decoration:underline;padding:0}
+  .result{margin-top:11px;padding:11px;background:var(--card);border:1px solid var(--accent2);
+        border-radius:8px;font-family:system-ui,sans-serif;font-size:.95rem}
+  .result.big{padding:17px;border-width:2px;font-size:1.05rem;transition:box-shadow .3s, border-color .3s}
+  .result.big strong{font-size:1.2rem}
+  .result.flash{box-shadow:0 0 0 4px rgba(168,92,50,.35);border-color:var(--accent)}
+  .empty{color:var(--muted);font-family:system-ui,sans-serif;font-size:.95rem;text-align:center;padding:32px 0}
+  .hint{font-family:system-ui,sans-serif;font-size:.76rem;color:var(--muted);margin-top:5px}
+  .totalPiecesRow{display:flex;gap:8px;align-items:flex-end}
+  .totalPiecesRow input{flex:1}
+  .enterRow{margin-top:11px;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="home">
+  <h1>Postage Calculator</h1>
+  <div class="sub">Commercial single-piece &middot; First-Class Mail</div>
+  <div id="jobList"></div>
+</div>
+
+<button class="fab" id="addJobFab" onclick="openAdd()">+</button>
+
+<!-- Add Job Sheet -->
+<div class="overlay" id="addOverlay">
+  <div class="sheet">
+    <div class="top"><strong>New Job</strong><button class="back" onclick="closeAdd()">Cancel</button></div>
+    <label>Job name</label>
+    <input type="text" id="newName" placeholder="e.g. Acme Corp — Monthly Newsletter">
+    <label>Shape</label>
+    <div class="toggle" id="shapeToggle">
+      <button data-v="letters" class="active" onclick="pick('shapeToggle',this)">Letters</button>
+      <button data-v="flats" onclick="pick('shapeToggle',this)">Flats</button>
+    </div>
+    <div style="margin-top:16px"><button class="btn" onclick="createJob()" style="width:100%">Continue</button></div>
+  </div>
+</div>
+
+<!-- Custom confirm/alert modal (native confirm/alert are blocked in the sandboxed viewer) -->
+<div class="overlay center" id="dialogOverlay">
+  <div class="sheet centered">
+    <div id="dialogMsg" style="font-family:system-ui,sans-serif;font-size:1rem;margin-bottom:17px"></div>
+    <div id="dialogButtons" style="display:flex;gap:8px"></div>
+  </div>
+</div>
+
+<!-- Job Detail -->
+<div id="detail" style="display:none">
+  <div class="top">
+    <button class="back" onclick="showHome()">&larr; Back to Jobs</button>
+    <button class="btn small secondary" onclick="deleteJob()">Delete</button>
+  </div>
+  <h1 id="dName"></h1>
+  <div class="sub" id="dBadge"></div>
+
+  <!-- SETUP MODE (not locked yet) -->
+  <div id="setupMode">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-size:1rem">Set up pages by weight</strong>
+        <button class="btn small secondary" id="editRatesBtn" onclick="toggleRateEdit()">Edit rates</button>
+      </div>
+      <div class="hint">For this job's paper stock, enter how many pages land in each ounce. Oz &amp; price come from your shared First-Class chart — tap "Edit rates" to fix a rate or add/remove a weight row.</div>
+      <table>
+        <thead><tr><th>Pages</th><th>Oz</th><th>Price</th><th></th></tr></thead>
+        <tbody id="setupBody"></tbody>
+      </table>
+      <div id="addRowWrap" style="display:none;margin-top:9px"><button class="btn small secondary" onclick="addRow()">+ Row</button></div>
+    </div>
+    <button class="btn" id="lockBtn" style="width:100%" onclick="lockJob()" disabled>Lock in job</button>
+    <div class="hint" style="text-align:center;margin-top:7px">Fill in at least one page count to lock this job.</div>
+  </div>
+
+  <!-- LOCKED MODE (ready to run) -->
+  <div id="lockedMode" style="display:none">
+    <div class="card">
+      <strong style="font-size:1rem">Pieces for this run</strong>
+      <div class="hint">Enter how many pieces weigh in at each row, then tap Enter to move to the next. This clears every time you reopen the job so last month's numbers never carry over.</div>
+      <table>
+        <thead><tr><th>Pages</th><th>Oz</th><th>Price</th><th>Pieces</th><th>Line $</th></tr></thead>
+        <tbody id="rateBody"></tbody>
+      </table>
+      <div class="enterRow"><button class="btn chartEnter" onclick="finishEntry()">Enter &#9166;</button></div>
+      <button class="link" style="margin-top:11px" onclick="editSetup()">Edit this job's pages/weights</button>
+    </div>
+
+    <div class="card">
+      <strong style="font-size:1rem">Mailing totals</strong>
+      <div id="totalsBox" class="result big"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RC_KEY='postage_rateCharts', J_KEY='postage_jobs';
+function loadRC(){ try{return JSON.parse(localStorage.getItem(RC_KEY))||{};}catch(e){return {};} }
+function saveRC(rc){ try{localStorage.setItem(RC_KEY, JSON.stringify(rc));}catch(e){} }
+function loadJobs(){ try{return JSON.parse(localStorage.getItem(J_KEY))||[];}catch(e){return [];} }
+function saveJobs(j){ try{localStorage.setItem(J_KEY, JSON.stringify(j));}catch(e){} }
+
+let jobs = loadJobs();
+let rateCharts = loadRC();
+let currentJobId = null;
+let ratesEditable = false;
+let lastFocused = null;
+
+// ---- custom dialogs (native confirm/alert are blocked in the sandboxed artifact viewer) ----
+function showAlert(msg){
+  document.getElementById('dialogMsg').textContent = msg;
+  document.getElementById('dialogButtons').innerHTML =
+    `<button class="btn" style="flex:1" onclick="closeDialog()">OK</button>`;
+  document.getElementById('dialogOverlay').classList.add('show');
+}
+function showConfirm(msg, onYes){
+  document.getElementById('dialogMsg').textContent = msg;
+  document.getElementById('dialogButtons').innerHTML =
+    `<button class="btn secondary" style="flex:1" onclick="closeDialog()">Cancel</button>
+     <button class="btn" style="flex:1" id="dialogYes">Delete</button>`;
+  document.getElementById('dialogOverlay').classList.add('show');
+  document.getElementById('dialogYes').onclick = function(){ closeDialog(); onYes(); };
+}
+function closeDialog(){ document.getElementById('dialogOverlay').classList.remove('show'); }
+
+// Notice 123 commercial single-piece rates, effective July 12, 2026 (source: pe.usps.com)
+const FC_DEFAULTS = {
+  'FC-letters': [
+    {oz:1, price:0.78}, {oz:2, price:1.07}, {oz:3, price:1.36}, {oz:3.5, price:1.65}
+  ],
+  'FC-flats': [
+    {oz:1, price:1.69}, {oz:2, price:1.98}, {oz:3, price:2.27}, {oz:4, price:2.56},
+    {oz:5, price:2.85}, {oz:6, price:3.14}, {oz:7, price:3.43}, {oz:8, price:3.72},
+    {oz:9, price:4.02}, {oz:10, price:4.32}, {oz:11, price:4.62}, {oz:12, price:4.93},
+    {oz:13, price:5.24}
+  ]
+};
+function ensureDefaults(){
+  let changed = false;
+  for(const k in FC_DEFAULTS){
+    if(!rateCharts[k]){ rateCharts[k] = JSON.parse(JSON.stringify(FC_DEFAULTS[k])); changed = true; }
+  }
+  if(changed) saveRC(rateCharts);
+}
+
+ensureDefaults();
+
+function chartKey(shape){ return 'FC-'+shape; }
+function labelFor(shape){ return 'First-Class · '+(shape==='letters'?'Letters':'Flats'); }
+
+function renderHome(){
+  const list = document.getElementById('jobList');
+  if(!jobs.length){ list.innerHTML='<div class="empty">No jobs yet. Tap + to add your first mailing.</div>'; return; }
+  list.innerHTML = jobs.map(j=>`
+    <div class="card job" onclick="openJob('${j.id}')">
+      <div><div class="name">${escapeHtml(j.name)}</div>
+        <div class="badge">${labelFor(j.shape)}${j.locked? '' : ' · <span class="draft">draft — needs setup</span>'}</div></div>
+      <div style="color:var(--muted)">&rsaquo;</div>
+    </div>`).join('');
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function pick(groupId, btn){
+  document.querySelectorAll('#'+groupId+' button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function openAdd(){ document.getElementById('addOverlay').classList.add('show'); }
+function closeAdd(){ document.getElementById('addOverlay').classList.remove('show');
+  document.getElementById('newName').value=''; }
+
+function createJob(){
+  const name = document.getElementById('newName').value.trim();
+  if(!name){ showAlert('Give the job a name.'); return; }
+  const shape = document.querySelector('#shapeToggle button.active').dataset.v;
+  const key = chartKey(shape);
+  if(!rateCharts[key]) rateCharts[key] = [{oz:1, price:0}];
+  saveRC(rateCharts);
+  const job = { id: 'j'+Date.now(), name, shape, locked:false, pageMap:{}, pieceMap:{}, pieces:null };
+  jobs.push(job); saveJobs(jobs);
+  closeAdd(); renderHome(); openJob(job.id);
+}
+
+function showHome(){ document.getElementById('detail').style.display='none';
+  document.getElementById('home').style.display='block';
+  document.getElementById('addJobFab').style.display='block';
+  renderHome(); }
+
+function currentJob(){ return jobs.find(j=>j.id===currentJobId); }
+function currentChart(){ const j=currentJob(); return rateCharts[chartKey(j.shape)]; }
+
+function openJob(id){
+  currentJobId = id;
+  const job = currentJob();
+  if(!job.pageMap) job.pageMap = {};
+  if(!job.pieceMap) job.pieceMap = {};
+  document.getElementById('home').style.display='none';
+  document.getElementById('detail').style.display='block';
+  document.getElementById('addJobFab').style.display='none';
+  document.getElementById('dName').textContent = job.name;
+  document.getElementById('dBadge').textContent = labelFor(job.shape);
+  ratesEditable = false;
+  document.getElementById('editRatesBtn').textContent = 'Edit rates';
+  document.getElementById('addRowWrap').style.display = 'none';
+
+  if(job.locked){
+    // fresh run every time a locked job is opened
+    job.pieceMap = {};
+    job.pieces = null;
+    saveJobs(jobs);
+    document.getElementById('setupMode').style.display='none';
+    document.getElementById('lockedMode').style.display='block';
+    renderRunTable();
+    setTimeout(()=>{ const el=document.querySelector('.pieceInput'); if(el){ el.focus(); lastFocused=el; } }, 150);
+  } else {
+    document.getElementById('setupMode').style.display='block';
+    document.getElementById('lockedMode').style.display='none';
+
+    // Pre-populate every weight with the estimated page count and save it.
+    // This means the job can be locked without manually changing any row.
+    const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+    let changed = false;
+    chart.forEach(row=>{
+      if(job.pageMap[row.oz] == null || job.pageMap[row.oz] === ''){
+        job.pageMap[row.oz] = estimatedPages(job.shape, row.oz);
+        changed = true;
+      }
+    });
+    if(changed) saveJobs(jobs);
+
+    renderSetupTable();
+  }
+}
+
+function editSetup(){
+  const job = currentJob();
+  job.locked = false;
+  job.pieceMap = {};
+  job.pieces = null;
+  saveJobs(jobs);
+  openJob(job.id);
+}
+
+function toggleRateEdit(){
+  ratesEditable = !ratesEditable;
+  document.getElementById('editRatesBtn').textContent = ratesEditable? 'Done' : 'Edit rates';
+  document.getElementById('addRowWrap').style.display = ratesEditable? 'block' : 'none';
+  renderSetupTable();
+}
+
+function renderSetupTable(){
+  const job = currentJob();
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+  const body = document.getElementById('setupBody');
+  body.innerHTML = chart.map((row,i)=>{
+    const ozCell = ratesEditable
+      ? `<input type="number" step="0.1" value="${row.oz}" onchange="editOz(${i}, this.value)">`
+      : `<span>${row.oz}</span>`;
+    const priceCell = ratesEditable
+      ? `<input type="number" step="0.01" value="${row.price}" onchange="editPrice(${i}, this.value)">`
+      : `<span>$${row.price.toFixed(3)}</span>`;
+    const delCell = ratesEditable ? `<button class="rowbtn" onclick="removeRow(${i})">✕</button>` : '';
+    return `<tr>
+      <td>
+        <div class="pageStepper">
+          <button type="button" aria-label="Decrease pages" onclick="changePages(${row.oz}, -1)">−</button>
+          <span class="pageValue" id="pages-${String(row.oz).replace('.', '_')}">${job.pageMap[row.oz]!=null?job.pageMap[row.oz]:estimatedPages(job.shape, row.oz)}</span>
+          <button type="button" aria-label="Increase pages" onclick="changePages(${row.oz}, 1)">+</button>
+        </div>
+      </td>
+      <td>${ozCell}</td>
+      <td>${priceCell}</td>
+      <td>${delCell}</td>
+    </tr>`;
+  }).join('');
+  updateLockButton();
+}
+function updateLockButton(){
+  const job = currentJob();
+  const chart = currentChart();
+  const hasPages = chart.some(row=>{
+    const value = job.pageMap[row.oz];
+    return value != null && value !== '';
+  });
+  document.getElementById('lockBtn').disabled = !hasPages;
+}
+function lockJob(){
+  const job = currentJob();
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+
+  // Store the displayed estimate for any row that has not been changed.
+  chart.forEach(row=>{
+    if(job.pageMap[row.oz] == null || job.pageMap[row.oz] === ''){
+      job.pageMap[row.oz] = estimatedPages(job.shape, row.oz);
+    }
+  });
+
+  const hasPages = chart.some(row=>{
+    const value = job.pageMap[row.oz];
+    return value != null && value !== '';
+  });
+  if(!hasPages){ showAlert('Fill in at least one page count first.'); return; }
+
+  job.locked = true;
+  saveJobs(jobs);
+  renderHome();
+  openJob(job.id);
+}
+
+function addRow(){
+  const chart = currentChart();
+  const maxOz = chart.length? Math.max(...chart.map(r=>r.oz)) : 0;
+  chart.push({oz: maxOz+1, price:0});
+  saveRC(rateCharts); renderSetupTable();
+}
+function removeRow(i){
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+  const key = chartKey(currentJob().shape);
+  rateCharts[key] = chart.filter((_,idx)=>idx!==i);
+  saveRC(rateCharts); renderSetupTable();
+}
+function editOz(i, val){
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+  chart[i].oz = parseFloat(val)||0;
+  rateCharts[chartKey(currentJob().shape)] = chart;
+  saveRC(rateCharts); renderSetupTable();
+}
+function editPrice(i, val){
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+  chart[i].price = parseFloat(val)||0;
+  rateCharts[chartKey(currentJob().shape)] = chart;
+  saveRC(rateCharts); renderSetupTable();
+}
+function estimatedPages(shape, oz){
+  if(shape === 'letters'){
+    const estimates = {1:4, 2:10, 3:16, 3.5:19};
+    return estimates[oz] != null ? estimates[oz] : 0;
+  }
+  const estimates = {1:1, 2:4, 3:7, 4:10, 5:13, 6:16, 7:19, 8:22,
+                     9:26, 10:29, 11:32, 12:35, 13:38};
+  return estimates[oz] != null ? estimates[oz] : 0;
+}
+function changePages(oz, delta){
+  const job = currentJob();
+  const current = job.pageMap[oz] != null
+    ? parseInt(job.pageMap[oz]) || 0
+    : estimatedPages(job.shape, oz);
+  const next = Math.max(0, current + delta);
+  job.pageMap[oz] = next;
+  saveJobs(jobs);
+
+  const id = 'pages-' + String(oz).replace('.', '_');
+  const el = document.getElementById(id);
+  if(el) el.textContent = next;
+  updateLockButton();
+}
+function editPages(oz, val){
+  const job = currentJob();
+  if(val==='') delete job.pageMap[oz]; else job.pageMap[oz] = parseInt(val)||0;
+  saveJobs(jobs); updateLockButton();
+}
+
+function renderRunTable(){
+  const job = currentJob();
+  const chart = currentChart().slice().sort((a,b)=>a.oz-b.oz);
+  const body = document.getElementById('rateBody');
+  body.innerHTML = chart.map(row=>{
+    const pages = job.pageMap[row.oz]!=null ? job.pageMap[row.oz] : '';
+    const pieces = job.pieceMap[row.oz]!=null ? job.pieceMap[row.oz] : '';
+    const lineTotal = (pieces!==''? pieces:0) * row.price;
+    return `<tr>
+      <td><span>${pages}</span></td>
+      <td><span>${row.oz}</span></td>
+      <td><span>$${row.price.toFixed(3)}</span></td>
+      <td><input type="number" class="pieceInput" data-oz="${row.oz}" value="${pieces}"
+            onfocus="lastFocused=this"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); advance(this);}"
+            onchange="editPieces(${row.oz}, this.value)"></td>
+      <td><span>$${lineTotal.toFixed(2)}</span></td>
+    </tr>`;
+  }).join('');
+  renderTotals();
+}
+function editPieces(oz, val){
+  const job = currentJob();
+  if(val==='') delete job.pieceMap[oz]; else job.pieceMap[oz] = parseInt(val)||0;
+  saveJobs(jobs); renderTotals();
+}
+
+// Sequential "Enter" navigation: total pieces field -> each piece row -> finish
+function advance(fromEl){
+  if(!fromEl) return;
+  // make sure any change handler on the field fires before we move on
+  fromEl.blur(); fromEl.focus(); fromEl.blur();
+  if(fromEl.onchange) fromEl.onchange({target:fromEl});
+  const seq = [...document.querySelectorAll('.pieceInput')];
+  const idx = seq.indexOf(fromEl);
+  if(idx > -1 && idx < seq.length - 1){
+    const next = seq[idx+1];
+    next.focus();
+    next.select && next.select();
+    lastFocused = next;
+  } else {
+    finishEntry();
+  }
+}
+function finishEntry(){
+  if(document.activeElement) document.activeElement.blur();
+  const box = document.getElementById('totalsBox');
+  box.scrollIntoView({behavior:'smooth', block:'center'});
+  box.classList.add('flash');
+  setTimeout(()=>box.classList.remove('flash'), 1200);
+}
+
+function renderTotals(){
+  const job = currentJob();
+  const chart = currentChart();
+  let totalPieces = 0, totalOz = 0, totalCost = 0;
+  chart.forEach(row=>{
+    const pieces = job.pieceMap[row.oz]||0;
+    totalPieces += pieces;
+    totalOz += pieces * row.oz;
+    totalCost += pieces * row.price;
+  });
+  document.getElementById('totalsBox').innerHTML = `
+    Pieces entered: <strong>${totalPieces}</strong>
+    <br>Total weight: <strong>${totalOz.toFixed(1)} oz</strong> (${(totalOz/16).toFixed(2)} lb)
+    <br>Total postage: <strong>$${totalCost.toFixed(2)}</strong>`;
+}
+function deleteJob(){
+  const job = currentJob();
+  showConfirm('Delete "'+job.name+'"?', function(){
+    jobs = jobs.filter(j=>j.id!==currentJobId);
+    saveJobs(jobs); showHome();
+  });
+}
+
+renderHome();
+</script>
+</body>
+</html>
